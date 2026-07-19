@@ -1,0 +1,14 @@
+# Sécurité : Ne jamais envoyer les secrets et mots de passe
+.streamlit/secrets.toml
+
+# Ne pas envoyer le modèle lourd (généré localement)
+model/fraud_model.pkl
+
+# Ne pas envoyer les gros jeux de données CSV
+data/*.csv
+
+# Ne pas envoyer l'environnement virtuel Python
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
