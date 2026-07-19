@@ -104,8 +104,8 @@ if page == "Prédiction":
             montant = st.number_input(
                 "Montant (FCFA)", min_value=0.0, value=50000.0, step=1000.0
             )
-            type_transac = st.selectbox("Type de transaction", types_transac)
-            status = st.selectbox("Status opération", statuts)
+            col2.metric("Taux de fraude", f"{(df['Target'] == 'Fraude').mean() * 100:.1f}%")
+            col3.metric("Taux suspect", f"{(df['Target'] == 'Suspect').mean() * 100:.1f}%")
 
         with col2:
             localisation = st.selectbox("Localisation", localisations)
@@ -151,14 +151,17 @@ else:
 
     df = load_data()
 
+    # Remplacer 'Target' par le nom exact de votre colonne cible : 'Class'
+    target_col = 'Class' 
+
     col1, col2, col3 = st.columns(3)
     col1.metric("Transactions totales", f"{len(df):,}")
-    col2.metric("Taux de fraude", f"{(df['Target'] == 'Fraude').mean() * 100:.1f}%")
-    col3.metric("Taux suspect", f"{(df['Target'] == 'Suspect').mean() * 100:.1f}%")
+    col2.metric("Taux de fraude", f"{(df[target_col] == 'Fraude').mean() * 100:.1f}%")
+    col3.metric("Taux suspect", f"{(df[target_col] == 'Suspect').mean() * 100:.1f}%")
 
     st.subheader("Répartition des classes")
     fig1 = px.pie(
-        df, names='Target', color='Target', color_discrete_map=COLOR_MAP, hole=0.4
+        df, names=target_col, color=target_col, color_discrete_map=COLOR_MAP, hole=0.4
     )
     st.plotly_chart(fig1, use_container_width=True)
 
@@ -166,7 +169,7 @@ else:
     with col4:
         st.subheader("Type de transaction vs statut")
         fig2 = px.histogram(
-            df, x='Type de transaction', color='Target', barnorm='percent',
+            df, x='Type de transaction', color=target_col, barnorm='percent',
             color_discrete_map=COLOR_MAP
         )
         st.plotly_chart(fig2, use_container_width=True)
@@ -174,7 +177,7 @@ else:
     with col5:
         st.subheader("Status opération vs statut")
         fig3 = px.histogram(
-            df, x='Status operation', color='Target', barnorm='percent',
+            df, x='Status operation', color=target_col, barnorm='percent',
             color_discrete_map=COLOR_MAP
         )
         st.plotly_chart(fig3, use_container_width=True)
@@ -183,7 +186,7 @@ else:
     df_plot = df.copy()
     df_plot['log_montant'] = np.log1p(df_plot['Montant'])
     fig4 = px.box(
-        df_plot, x='Target', y='log_montant', color='Target',
+        df_plot, x=target_col, y='log_montant', color=target_col,
         color_discrete_map=COLOR_MAP
     )
     st.plotly_chart(fig4, use_container_width=True)
