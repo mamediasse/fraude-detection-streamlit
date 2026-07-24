@@ -33,12 +33,18 @@ st.set_page_config(
 # =========================================================
 # DESIGN TOKENS
 # =========================================================
-COLOR_MAP = {"Normal": "#106747", "Suspect": "#FBBF24", "Fraude": "#F45555"}
+COLOR_MAP = {"Normal": "#1BBA80", "Suspect": "#B8880F", "Fraude": "#E63C3C"}
 ACCENT = "#22D3EE"
 BG_DEEP = "#0A0F1E"
 BG_SURFACE = "#121A2E"
 BG_SURFACE_2 = "#1B2540"
 TEXT_MUTED = "#8B96AD"
+
+# =========================================================
+# PERFORMANCE DU MODÈLE (évaluation sur le jeu de test)
+# =========================================================
+MODEL_ACCURACY = 0.88
+MODEL_F1_MACRO = 0.74
 
 VERDICT_CONFIG = {
     "Fraude": {
@@ -98,8 +104,8 @@ def inject_custom_css():
         padding: 0.4rem 0.9rem; border-radius: 999px; font-size: 0.82rem;
         font-family: 'JetBrains Mono', monospace; font-weight: 500;
     }}
-    .status-on {{ background: rgba(52,211,153,0.12); color: {COLOR_MAP['Normal']}; border: 1px solid rgba(52,211,153,0.3); }}
-    .status-off {{ background: rgba(248,113,113,0.12); color: {COLOR_MAP['Fraude']}; border: 1px solid rgba(248,113,113,0.3); }}
+    .status-on {{ background: rgba(27, 186, 128, 0.12); color: {COLOR_MAP['Normal']}; border: 1px solid rgba(27, 186, 128, 0.3); }}
+    .status-off {{ background: rgba(230, 60, 60, 0.12); color: {COLOR_MAP['Fraude']}; border: 1px solid rgba(230, 60, 60, 0.3); }}
     .pulse-dot {{
         width: 8px; height: 8px; border-radius: 50%; background: currentColor;
         box-shadow: 0 0 0 0 currentColor; animation: dotpulse 1.8s infinite;
@@ -307,6 +313,22 @@ with st.sidebar:
         except Exception:
             pass
 
+        st.write("")
+        st.markdown('<div class="section-eyebrow">Performance (jeu de test)</div>', unsafe_allow_html=True)
+        col_perf1, col_perf2 = st.columns(2)
+        with col_perf1:
+            st.markdown(
+                f'<span class="mono" style="color:{COLOR_MAP["Normal"]}; font-size:1.15rem;">{MODEL_ACCURACY:.2f}</span>'
+                f'<br><span style="color:{TEXT_MUTED}; font-size:0.75rem;">Accuracy</span>',
+                unsafe_allow_html=True
+            )
+        with col_perf2:
+            st.markdown(
+                f'<span class="mono" style="color:{ACCENT}; font-size:1.15rem;">{MODEL_F1_MACRO:.2f}</span>'
+                f'<br><span style="color:{TEXT_MUTED}; font-size:0.75rem;">F1-score macro</span>',
+                unsafe_allow_html=True
+            )
+
     st.divider()
     st.caption("Version 2.1 (Interface Interactive) • © 2026")
 
@@ -489,12 +511,23 @@ with tab2:
         metric_card("⚠️", "Alertes en Attente (Suspect)", f"{taux_suspect:.2f}%", sub="part des transactions filtrées", color=COLOR_MAP["Suspect"])
 
     st.write("")
+    st.markdown('<div class="section-eyebrow">Performance du modèle</div>', unsafe_allow_html=True)
+    col_perf1, col_perf2 = st.columns(2)
+    with col_perf1:
+        metric_card("🎯", "Accuracy (jeu de test)", f"{MODEL_ACCURACY:.2f}", sub="précision globale du modèle", color=COLOR_MAP["Normal"])
+    with col_perf2:
+        metric_card("⚖️", "F1-score macro (jeu de test)", f"{MODEL_F1_MACRO:.2f}", sub="moyenne non pondérée des 3 classes", color=ACCENT)
+
+    st.write("")
 
     col_chart1, col_chart2 = st.columns(2)
 
     with col_chart1:
         with st.container(border=True):
-            st.markdown("**Structure globale du portefeuille de risques**")
+            st.markdown(
+                "**Structure globale du portefeuille de risques**",
+                help="Répartition en pourcentage des transactions de la vue actuelle entre Normal, Suspect et Fraude. Donne une photo instantanée de la santé globale du flux analysé."
+            )
             fig1 = px.pie(
                 df_view, names=target_col, color=target_col, color_discrete_map=COLOR_MAP,
                 hole=0.55, height=300
@@ -505,10 +538,14 @@ with tab2:
                 paper_bgcolor='rgba(0,0,0,0)', legend={'font': {'color': '#E8EDF7'}}
             )
             st.plotly_chart(fig1, width='stretch')
+            st.caption("💡 Part de chaque catégorie de risque dans les transactions filtrées.")
 
     with col_chart2:
         with st.container(border=True):
-            st.markdown("**Distribution de la sévérité des montants (log)**")
+            st.markdown(
+                "**Distribution de la sévérité des montants (log)**",
+                help="Compare les montants des transactions selon leur catégorie de risque, en échelle logarithmique (les montants variant énormément, du simple retrait à de très grosses sommes). Permet de voir si les fraudes portent sur des montants plus élevés ou plus faibles que la normale."
+            )
             df_plot = df_view.copy()
             df_plot['Log-Montant (FCFA)'] = np.log1p(df_plot['Montant'])
             fig4 = px.box(
@@ -523,9 +560,13 @@ with tab2:
             fig4.update_xaxes(gridcolor='rgba(255,255,255,0.06)')
             fig4.update_yaxes(gridcolor='rgba(255,255,255,0.06)')
             st.plotly_chart(fig4, width='stretch')
+            st.caption("💡 Chaque boîte résume la fourchette des montants (médiane, quartiles, valeurs extrêmes) par catégorie.")
 
     with st.container(border=True):
-        st.markdown("**Vulnérabilité par typologie et statut technique des opérations**")
+        st.markdown(
+            "**Vulnérabilité par typologie et statut technique des opérations**",
+            help="Pour chaque canal de transaction et chaque statut technique, affiche la répartition normalisée à 100% des catégories de risque. Permet de repérer les canaux ou statuts les plus exposés à la fraude."
+        )
         col_hist1, col_hist2 = st.columns(2)
         with col_hist1:
             fig2 = px.histogram(
@@ -551,6 +592,7 @@ with tab2:
             fig3.update_xaxes(gridcolor='rgba(255,255,255,0.06)')
             fig3.update_yaxes(gridcolor='rgba(255,255,255,0.06)')
             st.plotly_chart(fig3, width='stretch')
+        st.caption("💡 Chaque barre est ramenée à 100% : elle montre la proportion de risque, pas le volume brut.")
 
     with st.expander("🗂️ Accéder au registre complet des transactions auditées"):
         st.dataframe(df_view.head(100), width='stretch')
